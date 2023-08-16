@@ -115,7 +115,7 @@ def main() -> None:
     bot.add_handler(CommandHandler('start', start_command))
     # callback of selected option
     bot.add_handler(CallbackQueryHandler(user_answer))
-
+    # handle user input
     bot.add_handler(MessageHandler(filters.TEXT, handle_user_input))
     # check for updates
     bot.run_polling(poll_interval=0)
