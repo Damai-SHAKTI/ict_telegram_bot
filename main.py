@@ -13,6 +13,8 @@ user_query: dict = {
     "part": "",
     "question_number": ""
 }
+past_papers = None
+past_papers_file_name: str = "past_papers.json"
 
 exam_years = [
     [
@@ -43,12 +45,12 @@ parts = [
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     reset_data()
+    load_past_papers()
     await update.message.reply_text(f"{TITLE} \nPlease select examination year: ", reply_markup=prompt_exam_year(), parse_mode="Markdown")
 
 
 def reset_data() -> None:
-    global query_count
-    global user_query
+    global query_count, user_query
 
     query_count = 1
     user_query = {
@@ -56,6 +58,19 @@ def reset_data() -> None:
         "part": "",
         "question_number": ""
     }
+
+
+def load_past_papers() -> None:
+    global past_papers, past_papers_file_name
+    try:
+        past_paper_file = open(past_papers_file_name, "r")
+        past_papers = json.load(past_paper_file)
+    except FileNotFoundError:
+        print(f"File {past_papers_file_name} not found.  Aborting")
+    except OSError:
+        print(f"OS error occurred trying to open {past_papers_file_name}")
+    except Exception as err:
+        print(f"Unexpected error opening {past_papers_file_name} is", repr(err))
 
 
 def is_positive_integer(num: any) -> bool:
@@ -97,8 +112,6 @@ async def handle_user_input(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         reply_text: str = f"{TITLE} \nYear: {user_query['year']} \nPart: {user_query['part']} \nQuestion number: {user_question_number} \nYoutube: Not found"
         if is_positive_integer(user_question_number):
             user_query["question_number"] = user_question_number
-            past_paper_file = open('past_papers.json', 'r')
-            past_papers = json.load(past_paper_file)
             for past_paper in past_papers:
                 if user_query["year"] == past_paper["year"] and user_query["part"] == past_paper["part"] and user_query["question_number"] == past_paper["question_number"]:
                     reply_text = f"{TITLE} \nYear: {user_query['year']} \nPart: {user_query['part']} \nQuestion number: {user_question_number} \nYoutube: {past_paper['youtube_url']}"
