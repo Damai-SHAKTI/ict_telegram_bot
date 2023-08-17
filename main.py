@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
@@ -7,6 +8,7 @@ TOKEN = "6309347882:AAHo2tN80esIDdmBrLXy_AECq4JvFWjqkLI"
 
 TITLE = "*ICT HKDSE PAST PAPER*"
 
+user_id: str = None
 query_count: int = 1
 user_query: dict = {
     "year": "",
@@ -46,6 +48,7 @@ parts = [
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     reset_data()
     load_past_papers()
+    set_user_id(update)
     await update.message.reply_text(f"{TITLE} \nPlease select examination year: ", reply_markup=prompt_exam_year(), parse_mode="Markdown")
 
 
@@ -73,6 +76,11 @@ def load_past_papers() -> None:
         print(f"Unexpected error opening {past_papers_file_name} is", repr(err))
 
 
+def set_user_id(update) -> None:
+    global user_id
+    user_id = update.message.from_user["id"]
+
+
 def is_positive_integer(num: any) -> bool:
     try:
         value = int(num)
@@ -90,9 +98,13 @@ def prompt_part() -> InlineKeyboardMarkup:
 
 
 async def user_answer(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    global query_count
+    global query_count, user_id
+
     query = update.callback_query
     await query.answer()
+
+    if update.callback_query.from_user["id"] != user_id:
+        return
 
     if query_count == 1:
         user_query["year"] = query.data
@@ -107,14 +119,16 @@ async def user_answer(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
 
 async def handle_user_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if query_count == 3:
+    if update.message.from_user["id"] == user_id and query_count == 3:
+        user_info = update.message.from_user
         user_question_number: str = update.message.text
         reply_text: str = f"{TITLE} \nYear: {user_query['year']} \nPart: {user_query['part']} \nQuestion number: {user_question_number} \nYoutube: Not found"
         if is_positive_integer(user_question_number):
             user_query["question_number"] = user_question_number
             for past_paper in past_papers:
                 if user_query["year"] == past_paper["year"] and user_query["part"] == past_paper["part"] and user_query["question_number"] == past_paper["question_number"]:
-                    reply_text = f"{TITLE} \nYear: {user_query['year']} \nPart: {user_query['part']} \nQuestion number: {user_question_number} \nYoutube: {past_paper['youtube_url']}"
+                    user_details = f"By {user_info['first_name']} {user_info['last_name']} at {datetime.today().strftime('%Y-%m-%d %H:%M:%S')}"
+                    reply_text = f"{user_details} \n{TITLE} \nYear: {user_query['year']} \nPart: {user_query['part']} \nQuestion number: {user_question_number} \nYoutube: {past_paper['youtube_url']}"
         else:
             reply_text = "Please enter valid positive integer"
         await update.message.reply_text(reply_text, parse_mode="Markdown")
