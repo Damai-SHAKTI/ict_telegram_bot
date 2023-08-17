@@ -81,11 +81,11 @@ async def user_answer(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
     if query_count == 1:
         user_query["year"] = query.data
-        new_text: str = f"*ICT HKDSE PAST PAPER* \nYear: {user_query['year']} \nPlease enter part (A/B): "
+        new_text: str = f"{TITLE} \nYear: {user_query['year']} \nPlease enter part (A/B): "
         await query.edit_message_text(text=new_text, reply_markup=prompt_part(), parse_mode="Markdown")
     elif query_count == 2:
         user_query["part"] = query.data
-        new_text: str = f"*ICT HKDSE PAST PAPER* \nYear: {user_query['year']} \nPart: {user_query['part']} \nPlease input question number: "
+        new_text: str = f"{TITLE} \nYear: {user_query['year']} \nPart: {user_query['part']} \nPlease input question number: "
         await query.edit_message_text(text=new_text, parse_mode="Markdown")
 
     query_count += 1
@@ -94,14 +94,14 @@ async def user_answer(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 async def handle_user_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if query_count == 3:
         user_question_number: str = update.message.text
-        reply_text: str = f"*ICT HKDSE PAST PAPER* \nYear: {user_query['year']} \nPart: {user_query['part']} \nQuestion number: {user_question_number} \nYoutube: Not found"
+        reply_text: str = f"{TITLE} \nYear: {user_query['year']} \nPart: {user_query['part']} \nQuestion number: {user_question_number} \nYoutube: Not found"
         if is_positive_integer(user_question_number):
             user_query["question_number"] = user_question_number
             past_paper_file = open('past_papers.json', 'r')
             past_papers = json.load(past_paper_file)
             for past_paper in past_papers:
                 if user_query["year"] == past_paper["year"] and user_query["part"] == past_paper["part"] and user_query["question_number"] == past_paper["question_number"]:
-                    reply_text = f"*ICT HKDSE PAST PAPER* \nYear: {user_query['year']} \nPart: {user_query['part']} \nQuestion number: {user_question_number} \nYoutube: {past_paper['youtube_url']}"
+                    reply_text = f"{TITLE} \nYear: {user_query['year']} \nPart: {user_query['part']} \nQuestion number: {user_question_number} \nYoutube: {past_paper['youtube_url']}"
         else:
             reply_text = "Please enter valid positive integer"
         await update.message.reply_text(reply_text, parse_mode="Markdown")
