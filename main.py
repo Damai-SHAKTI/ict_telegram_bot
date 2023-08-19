@@ -59,16 +59,36 @@ def load_past_papers() -> None:
         print(f"Unexpected error opening {PAST_PAPERS_FILE} is", repr(err))
 
 
-def is_positive_integer(num: any) -> bool:
+def is_valid_question(part: str, question_number: str) -> bool:
     try:
-        value = int(num)
-        return value > 0
+        if part == "A":
+            if len(question_number) > 2 or len(question_number) < 1:
+                return False
+            else:
+                return 0 < int(question_number) <= 40
+
+        if part == "B":
+            if len(question_number) != 2:
+                return False
+            else:
+                first_char = question_number[0]
+                second_char = question_number[1]
+                print(first_char, second_char)
+
+                if not first_char.isdigit() or not second_char.isalpha():
+                    return False
+
+                if first_char not in "12345" or second_char not in "abcde":
+                    return False
+
+                return True
+
     except ValueError:
         return False
 
 
 async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text(f"*STATS* \nMost asked: 10", parse_mode="Markdown")
+    await context.bot.send_message(text=f"*STATS* \nMost asked: 10", chat_id=update.message.chat_id, parse_mode="Markdown")
 
 
 def prompt_exam_year() -> InlineKeyboardMarkup:
@@ -114,10 +134,10 @@ async def handle_user_input(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     if query_count == 3:
         chat_id = update.message.chat_id
         user_info = update.message.from_user
-        user_question_number: str = update.message.text
+        user_question_number: str = update.message.text.strip().lower()
         reply_text: str = f"{TITLE} \nYear: {user_query['year']} \nPart: {user_query['part']} \nQuestion number: {user_question_number} \nYoutube: Not found"
 
-        if is_positive_integer(user_question_number):
+        if is_valid_question(user_query["part"], user_question_number):
             user_query["question_number"] = user_question_number
             for past_paper in past_papers:
                 if user_query["year"] == past_paper["year"] and user_query["part"] == past_paper["part"] and user_query["question_number"] == past_paper["question_number"]:
@@ -135,10 +155,13 @@ async def handle_user_input(update: Update, context: ContextTypes.DEFAULT_TYPE) 
                     # except Exception as exp:
                     #     print(exp)
         else:
-            reply_text = "Please enter valid positive integer"
+            if user_query["part"] == "A":
+                reply_text = "Please enter valid positive integer in range (1-40)"
+            elif user_query["part"] == "B":
+                reply_text = "Please enter valid question in format and range (1-5) + (a-e) e.g 1b"
         await context.bot.send_message(text=reply_text, parse_mode="Markdown", chat_id=chat_id)
 
-        if reply_text != "Please enter valid positive integer":
+        if reply_text != "Please enter valid positive integer in range (1-40)" and reply_text != "Please enter valid question in format and range (1-5) + (a-e) e.g 1b":
             await context.bot.send_message(text="Please give us your feedback:", reply_markup=prompt_feedback(), chat_id=chat_id)
 
 
